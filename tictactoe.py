@@ -1,19 +1,16 @@
 import pygame
-import math
 pygame.init()
 
-screen_height = 500
 screen_width = 500
+screen_height = 700
 
-screen = pygame.display.set_mode((screen_height, screen_width))
+screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Tic Tac Toe")
 
 #colour definitions
 white = (255,255,255)
 black = (0,0,0)
-background_colour = (20,20,25)
-
-
+background_colour = (40,40,55)
 
 #grid definitions
 class Grid:
@@ -115,19 +112,21 @@ class Game:
         self.grid = grid
         self.current_player = 1
         self.game_over = False
-        self.x_pieces = []
-        self.o_pieces = []
-        self.moves = []
+        self.pieces = []
+        self.board = [['' for _ in range(3)] for _ in range(3)]
 
     def handle_click(self, mouse_pos):
         if self.game_over:
             return
 
         clicked_square = None
-        for square in self.grid.squares:
-            if square.collidepoint(mouse_pos) and not self.grid.is_square_filled(square):
+        for i, square in enumerate(self.grid.squares):
+            if square.collidepoint(mouse_pos): #and not self.grid.is_square_filled(square):
                 clicked_square = square
-                self.grid.fill_square(clicked_square)
+                row = i // 3
+                col = i % 3
+                if self.board[row][col] != '':
+                    return
                 break
         
         if not clicked_square:
@@ -137,15 +136,14 @@ class Game:
 
         if self.current_player == 1:
             piece = X(x, y, 10, 75, 45, white)
-            self.x_pieces.append(piece)
-            self.moves.append(self.get_square_index(clicked_square))
+            self.board[row][col] = 'X'
         else:
-            
             piece = O(x, y, 40, 30, white, background_colour)
-            self.o_pieces.append(piece)
-            self.moves.append(self.get_square_index(clicked_square))
+            self.board[row][col] = 'O'
+        
+        self.pieces.append(piece)
 
-        if self.check_win(piece, clicked_square):
+        if self.check_win(self.board):
             self.end_game()
         else:
             self.current_player = 1 if self.current_player == 2 else 2
@@ -154,34 +152,45 @@ class Game:
         idx = self.grid.squares.index(square) + 1
         return idx
 
-    def check_win(self, piece, square):
-        win_combinations = [
-        [1,2,3],
-        [1,5,9],
-        [1,4,7],
-        [2,5,8],
-        [3,5,7],
-        [3,6,9],
-        [4,5,6],
-        [7,8,9]
+    def check_win(self, board):
+        winning_combinations = [
+            [(0, 0), (0, 1), (0, 2)],  # Row 1
+            [(1, 0), (1, 1), (1, 2)],  # Row 2
+            [(2, 0), (2, 1), (2, 2)],  # Row 3
+            [(0, 0), (1, 0), (2, 0)],  # Column 1
+            [(0, 1), (1, 1), (2, 1)],  # Column 2
+            [(0, 2), (1, 2), (2, 2)],  # Column 3
+            [(0, 0), (1, 1), (2, 2)],  # Diagonal 1
+            [(0, 2), (1, 1), (2, 0)],  # Diagonal 2
         ]
-        for combo in win_combinations:
-            if all(index in self.moves for index in combo):
+
+        for combination in winning_combinations:
+            if all(board[row][col] == 'X' for row, col in combination):
+                print(f"Player {self.current_player} wins!")
                 return True
 
+            if all(board[row][col] == 'O' for row, col in combination):
+                print(f"Player {self.current_player} wins!")
+                return True
 
-    def end_game(self):
-        print(f"Player {self.current_player} wins!")
+        if all(board[row][col]!= '' for row in range(3) for col in range(3)):
+            self.end_game(draw = True)
+            return True
+
+    def end_game(self, draw=False):
+        if draw:
+            print(f"It's a Draw!")
         self.game_over = True
 
     def draw_pieces(self):
         # Draw all X and O pieces stored
-        for piece in self.x_pieces:
-            piece.draw_x(self.screen)
-        for piece in self.o_pieces:
-            piece.draw_o(self.screen)
+        for piece in self.pieces:
+            if isinstance(piece, X):
+                piece.draw_x(self.screen)
+            elif isinstance(piece, O):
+                piece.draw_o(self.screen)
 
-grid = Grid(50, 50, 400, 400, white)
+grid = Grid(50, 250, 400, 400, white)
 game = Game(screen, grid)
 
 #game loop
