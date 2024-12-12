@@ -13,6 +13,8 @@ white = (255,255,255)
 black = (0,0,0)
 background_colour = (20,20,25)
 
+
+
 #grid definitions
 class Grid:
     def __init__(self, x, y, height, width, color):
@@ -30,11 +32,14 @@ class Grid:
         self.vertical_rect1 = pygame.Rect(self.x + self.width / 3, self.y, self.line_thickness, self.height)
         self.vertical_rect2 = pygame.Rect(self.x + 2 * self.width / 3, self.y, self.line_thickness, self.height)
     
+        #creates a 3x3 grid 
         self.squares = [
             pygame.Rect(self.x + col * (self.width / 3), self.y + row * ( self.height / 3), self.width / 3, self.height / 3)
         for row in range(3)
         for col in range(3)
         ]
+
+        self.filled_squares = []
 
     def draw_grid(self, screen):
         pygame.draw.rect(screen, self.color, self.horizontal_rect1)
@@ -42,17 +47,24 @@ class Grid:
         pygame.draw.rect(screen, self.color, self.vertical_rect1)
         pygame.draw.rect(screen, self.color, self.vertical_rect2)
 
-grid = Grid(50, 50, 400, 400, white)
+    def is_square_filled(self, square):
+        return square in self.filled_squares
+
+    def fill_square(self, square):
+        if square not in self.filled_squares:
+            self.filled_squares.append(square)
+
 
 #X definitions
 class X:
     def __init__(self, x, y, angle, height, width, color):
         self.x = x
         self.y = y
-        self.angle = angle
-        self.height = height
-        self.width = width
-        self.color = color
+        self.angle = 45
+        self.height = 10
+        self.width = 75
+        self.color = white
+        self.piece_type = 'O'
 
         self.surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         self.surface.fill(self.color)
@@ -62,21 +74,19 @@ class X:
 
     def draw_x(self, screen):
         rotated_surface1 = pygame.transform.rotate(self.surface, self. angle)
-        rect1 = rotated_surface1.get_rect(center=(self.x, self.y))
+        self.rect1 = rotated_surface1.get_rect(center=(self.x, self.y))
 
         rotated_surface2 = pygame.transform.rotate(self.surface, -self. angle)
-        rect2 = rotated_surface2.get_rect(center=(self.x, self.y))
+        self.rect2 = rotated_surface2.get_rect(center=(self.x, self.y))
 
-        screen.blit(rotated_surface1, rect1.topleft)  
-        screen.blit(rotated_surface2, rect2.topleft)   
+
+        screen.blit(rotated_surface1, self.rect1.topleft)  
+        screen.blit(rotated_surface2, self.rect2.topleft)   
 
     def is_in_square(self, square):
         if self.rect1 and self.rect2:
             return square.colliderect(self.rect1) or square.colliderect(self.rect2)
         return False
-
-#(x, y, angle, height, width, colour)
-x = X(255, 255, 45, 10, 75, white)
 
 #O definitons
 class O:
@@ -88,6 +98,7 @@ class O:
         self.color = color
         self.hole_color = hole_color
         self.bounding_box = pygame.Rect(x - outer_rad, y - outer_rad, 2 * outer_rad, 2 * outer_rad)
+        self.piece_type = 'X'
 
     def draw_o(self, screen):
         #draws the bigger circle and the circle to display the hole
@@ -97,7 +108,81 @@ class O:
     def is_in_square(self, square): 
         return square.colliderect(self.bounding_box)
 
-o = O(0, 120, 40, 30, white, background_colour)
+        #Game Function
+class Game:
+    def __init__(self, screen, grid):
+        self.screen = screen
+        self.grid = grid
+        self.current_player = 1
+        self.game_over = False
+        self.x_pieces = []
+        self.o_pieces = []
+        self.moves = []
+
+    def handle_click(self, mouse_pos):
+        if self.game_over:
+            return
+
+        clicked_square = None
+        for square in self.grid.squares:
+            if square.collidepoint(mouse_pos) and not self.grid.is_square_filled(square):
+                clicked_square = square
+                self.grid.fill_square(clicked_square)
+                break
+        
+        if not clicked_square:
+            return
+
+        x, y = clicked_square.center
+
+        if self.current_player == 1:
+            piece = X(x, y, 10, 75, 45, white)
+            self.x_pieces.append(piece)
+            self.moves.append(self.get_square_index(clicked_square))
+        else:
+            
+            piece = O(x, y, 40, 30, white, background_colour)
+            self.o_pieces.append(piece)
+            self.moves.append(self.get_square_index(clicked_square))
+
+        if self.check_win(piece, clicked_square):
+            self.end_game()
+        else:
+            self.current_player = 1 if self.current_player == 2 else 2
+
+    def get_square_index(self, square):
+        idx = self.grid.squares.index(square) + 1
+        return idx
+
+    def check_win(self, piece, square):
+        win_combinations = [
+        [1,2,3],
+        [1,5,9],
+        [1,4,7],
+        [2,5,8],
+        [3,5,7],
+        [3,6,9],
+        [4,5,6],
+        [7,8,9]
+        ]
+        for combo in win_combinations:
+            if all(index in self.moves for index in combo):
+                return True
+
+
+    def end_game(self):
+        print(f"Player {self.current_player} wins!")
+        self.game_over = True
+
+    def draw_pieces(self):
+        # Draw all X and O pieces stored
+        for piece in self.x_pieces:
+            piece.draw_x(self.screen)
+        for piece in self.o_pieces:
+            piece.draw_o(self.screen)
+
+grid = Grid(50, 50, 400, 400, white)
+game = Game(screen, grid)
 
 #game loop
 running = True
@@ -105,19 +190,14 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
+            game.handle_click(event.pos)
         
     screen.fill(background_colour)
 
     #Draw game pieces
     grid.draw_grid(screen)
-    x.draw_x(screen)
-    o.draw_o(screen)
-
-    for i, square in enumerate(grid.squares):
-        if o.is_in_square(square):
-            print(f"0 is in square {i + 1}")
-        if x.is_in_square(square):
-            print(f"X is in Square {i + 1}")
+    game.draw_pieces()
 
     pygame.display.flip()
 
