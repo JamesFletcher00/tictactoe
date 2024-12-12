@@ -7,16 +7,17 @@ screen_height = 775
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Tic Tac Toe")
 
+#colour definitions
+white = (255,255,255)
+black = (0,0,0)
+background_colour = (40,40,55)
+
 header = pygame.image.load('tictactoe header.png')
 header = pygame.transform.scale(header, (screen_width, 100))
 
 playagain = pygame.image.load('playagain.png')
 playagain = pygame.transform.scale(playagain, (200, 90))
-
-#colour definitions
-white = (255,255,255)
-black = (0,0,0)
-background_colour = (40,40,55)
+playagain_coll = playagain.get_rect(center = (250, 675))
 
 #grid definitions
 class Grid:
@@ -120,6 +121,8 @@ class Game:
         self.game_over = False
         self.pieces = []
         self.board = [['' for _ in range(3)] for _ in range(3)]
+        self.P1_Score = 0
+        self.P2_Score = 0
 
     def handle_click(self, mouse_pos):
         if self.game_over:
@@ -173,10 +176,14 @@ class Game:
         for combination in winning_combinations:
             if all(board[row][col] == 'X' for row, col in combination):
                 print(f"Player {self.current_player} wins!")
+                self.P1_Score += 1
+                print(f"{game.P1_Score}")
                 return True
 
             if all(board[row][col] == 'O' for row, col in combination):
                 print(f"Player {self.current_player} wins!")
+                self.P2_Score += 1
+                print(f"{game.P2_Score}")
                 return True
 
         if all(board[row][col]!= '' for row in range(3) for col in range(3)):
@@ -184,10 +191,16 @@ class Game:
             return True
 
     def end_game(self, draw=False):
+        self.game_over = True
         if draw:
             print(f"It's a Draw!")
-        self.game_over = True
 
+
+    def next_round(self):
+        self.board = [['' for _ in range(3)] for _ in range(3)]
+        self.pieces = []
+        self.current_player = 1
+        self.game_over = False
 
     def draw_pieces(self):
         # Draw all X and O pieces stored
@@ -200,6 +213,31 @@ class Game:
 grid = Grid(50, 250, 400, 400, white)
 game = Game(screen, grid)
 
+#Text set up
+score_heading_font = pygame.font.Font(None, 36)
+score_heading_font.set_underline(True)
+text_colour = white
+
+scoreP1_heading_text = "Player 1 Score" 
+scoreP2_heading_text = "Player 2 Score"
+
+scoreP1_heading = score_heading_font.render(scoreP1_heading_text, True, text_colour)
+scoreP2_heading = score_heading_font.render(scoreP2_heading_text, True, text_colour)
+
+headingP1_rect = scoreP1_heading.get_rect(center = (125,150))
+headingP2_rect = scoreP2_heading.get_rect(center = (375,150))
+
+score_font = pygame.font.Font(None, 64)
+
+scoreP1_text = f"{game.P1_Score}" 
+scoreP2_text = f"{game.P2_Score}"
+
+scoreP1 = score_font.render(scoreP1_text, True, text_colour)
+scoreP2 = score_font.render(scoreP2_text, True, text_colour)
+
+P1_rect = scoreP1.get_rect(center = (125,200))
+P2_rect = scoreP2.get_rect(center = (375,200))
+
 #game loop
 running = True
 while running:
@@ -207,7 +245,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
-            game.handle_click(event.pos)
+            if game.game_over:
+                if playagain_coll.collidepoint(event.pos):
+                    game.next_round()
+            else:
+                game.handle_click(event.pos)
         
     screen.fill(background_colour)
 
@@ -215,10 +257,27 @@ while running:
     if game.game_over == True :
             screen.blit(playagain,(150, 675))
 
+    
+    scoreP1_text = f"{game.P1_Score}" 
+    scoreP2_text = f"{game.P2_Score}"
+
+    scoreP1 = score_font.render(scoreP1_text, True, text_colour)
+    scoreP2 = score_font.render(scoreP2_text, True, text_colour)
+
+    P1_rect = scoreP1.get_rect(center = (125,200))
+    P2_rect = scoreP2.get_rect(center = (375,200))
+
+    screen.blit(scoreP1_heading, headingP1_rect)
+    screen.blit(scoreP2_heading, headingP2_rect)
+    screen.blit(scoreP1, P1_rect)
+    screen.blit(scoreP2, P2_rect)
+
     #Draw game pieces
     grid.draw_grid(screen)
     game.draw_pieces()
 
+    for piece in game.pieces:
+        piece.draw_x(screen) if isinstance(piece, X) else piece.draw_o(screen)
     pygame.display.flip()
 
 pygame.quit()
