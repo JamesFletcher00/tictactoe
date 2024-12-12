@@ -2,10 +2,16 @@ import pygame
 pygame.init()
 
 screen_width = 500
-screen_height = 700
+screen_height = 775
 
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Tic Tac Toe")
+
+header = pygame.image.load('tictactoe header.png')
+header = pygame.transform.scale(header, (screen_width, 100))
+
+playagain = pygame.image.load('playagain.png')
+playagain = pygame.transform.scale(playagain, (200, 90))
 
 #colour definitions
 white = (255,255,255)
@@ -182,6 +188,7 @@ class Game:
             print(f"It's a Draw!")
         self.game_over = True
 
+
     def draw_pieces(self):
         # Draw all X and O pieces stored
         for piece in self.pieces:
@@ -203,6 +210,10 @@ while running:
             game.handle_click(event.pos)
         
     screen.fill(background_colour)
+
+    screen.blit(header,(0, 20))
+    if game.game_over == True :
+            screen.blit(playagain,(150, 675))
 
     #Draw game pieces
     grid.draw_grid(screen)
