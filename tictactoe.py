@@ -1,4 +1,5 @@
 import pygame
+from pathlib import Path
 pygame.init()
 
 screen_width = 500
@@ -12,10 +13,14 @@ white = (255,255,255)
 black = (0,0,0)
 background_colour = (40,40,55)
 
-header = pygame.image.load('tictactoe header.png')
+BASE_DIR = Path(__file__).parent
+HEADER_PATH = BASE_DIR / 'assets' / 'tictactoe header.png'
+PLAY_AGAIN_PATH = BASE_DIR / 'assets' / 'playagain.png'
+
+header = pygame.image.load(str(HEADER_PATH))
 header = pygame.transform.scale(header, (screen_width, 100))
 
-playagain = pygame.image.load('playagain.png')
+playagain = pygame.image.load(str(PLAY_AGAIN_PATH))
 playagain = pygame.transform.scale(playagain, (200, 90))
 playagain_coll = playagain.get_rect(center = (250, 675))
 
