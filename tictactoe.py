@@ -15,10 +15,10 @@ black = (0,0,0)
 background_colour = (40,40,55)
 
 if getattr(sys, 'frozen', False):
-    BASE_DIR = Path(sys._MEIPASS),
+    BASE_DIR = Path(sys._MEIPASS)
 else:
     BASE_DIR = Path(__file__).parent
-    
+
 HEADER_PATH = BASE_DIR / 'assets' / 'tictactoe header.png'
 PLAY_AGAIN_PATH = BASE_DIR / 'assets' / 'playagain.png'
 
